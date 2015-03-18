@@ -23,10 +23,23 @@ from email import Encoders
 
 from xml.etree import ElementTree
 
+import mysql.connector
+from datetime import datetime
+from mysql.connector.cursor import MySQLCursor
+import config
+from utils import jira_rest
 ############################################################################################################################
+def create_jira_object():
+    jira_obj = jira_rest.JiraRest(config.JIRA["jira_server"],
+                                config.JIRA['jira_user'], 
+                                config.JIRA['jira_password'])
+    return jira_obj
 
 class SampleBot(GtalkRobot):
-    
+    def create_db_cursor(self):
+       cnx = mysql.connector.connect(**config.config)
+       cursor = MySQLCursor(cnx)	
+       return cursor
     #"command_" is the command prefix, "001" is the priviledge num, "setState" is the method name.
     def command_001_setState(self, user, message, args):
         #the __doc__ of the function is the Regular Expression of this command, if matched, this command method will be called. 
@@ -67,16 +80,19 @@ class SampleBot(GtalkRobot):
         #get menu
         '''(menu|Menu)'''
         self.usercommands.append([user.getStripped(), "get menu information", args[0]])
-        sample_lunch_data = {'Monday': 'rice,splrice,tomoat curry,cabbage,gulabjam','Tuesday':'rice,chapati,carrot curry,sambar,laddu','Wednesday':'puri,rice,dal,halwa'}
-        sample_snacks_data = {'Monday': 'samosa','Tuesday': 'idly','Wednesday':'cutfruits'}
-        current_day=datetime.today().strftime("%A")
-        data = ""
-        if sample_lunch_data.has_key(current_day) and sample_snacks_data.has_key(current_day):
-           data = "Lunch:" + sample_lunch_data[current_day]
-           data += "\n"+ "Snacks:"+ sample_snacks_data[current_day]
-        else:
-           data = "not matching"
-        self.replyMessage(user, data)
+        try:
+	        #cursor = self.create_db_cursor()
+	        cnx = mysql.connector.connect(**config.config)
+	        cursor = MySQLCursor(cnx)	
+	        current_date = datetime.today().strftime("%A")
+	        cursor.execute("SELECT lunch,snaks FROM menu WHERE day_name = '%s'"%(current_date))
+	        row = cursor.fetchone()
+	        data =  "Lunch : " +  row[0] + "\n"+ "Snacks : "+ row[1] if row else "Not Found"
+	        self.replyMessage(user, data)
+        except Exception,e :
+	        print e
+        finally:
+	        cursor.close()
 
     def command_003_GetVideoInformation(self, user, message, args):
 	#get youtube video information
@@ -159,8 +175,9 @@ class SampleBot(GtalkRobot):
 	self.replyMessage(user, "\n(arithmetic expression) i.e: 10 * 3250")
 	self.replyMessage(user, "\n(currency) <SYMBOL> <SYMBOL i.e: currency USD EUR")
 	self.replyMessage(user, "\n(weather) <CITY>")
-        self.replyMessage(user, "\nmenu) <menu>")
-	self.replyMessage(user, "\nMore features to come...")
+        self.replyMessage(user, "\n(menu) <menu>")
+        self.replyMessage(user, "\n(jira|status|assignee) <ticket number>")
+        self.replyMessage(user, "\nMore features to come...")
        
 
    
@@ -170,6 +187,22 @@ class SampleBot(GtalkRobot):
 	print user, "executed command: Unknown Command:", args
 	self.usercommands.append([user.getStripped(), "unknown command ", message])
         self.replyMessage(user, "Wle unknown Command at:\n" + time.strftime("%Y-%m-%d %a %H:%M:%S", time.gmtime()))
+
+    def command_012_SearchJIRA(self,user,message,args):
+        '''(jira|status|assignee)\s+(.*)'''
+        try:
+            message_split = message.split(" ")
+            jira_server = jira_rest.JiraRest("https://jira.castlighthealth.com:8443", "wh_ops","")
+            jira_session = jira_server.get_session()
+            if len(message_split) > 1:
+               jira_label = message_split[1]
+               issue=jira_session.issue(jira_label)
+               self.replyMessage(user, "status : "+str(issue.fields.status)+" , assignee : "+str(issue.fields.assignee))
+            else:
+               self.replyMessage(user, "Wrong ticket")
+            self.replyMessage(user, "End")
+        except Exception, e:
+            print e
 
 def mail(user, passwd, to, subject, text):
    msg = MIMEMultipart()

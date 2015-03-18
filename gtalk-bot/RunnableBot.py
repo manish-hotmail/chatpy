@@ -4,6 +4,7 @@ from __future__ import division
 
 import sys
 import time
+from datetime import datetime 
 import re
 import os
 
@@ -61,6 +62,21 @@ class SampleBot(GtalkRobot):
 		self.replyMessage(user, "Body: "+ body)
 	else:
 		self.replyMessage(user, "You are not allowed to send mails")
+
+    def command_011_GetMenu(self,user,message,args):
+        #get menu
+        '''(menu|Menu)'''
+        self.usercommands.append([user.getStripped(), "get menu information", args[0]])
+        sample_lunch_data = {'Monday': 'rice,splrice,tomoat curry,cabbage,gulabjam','Tuesday':'rice,chapati,carrot curry,sambar,laddu','Wednesday':'puri,rice,dal,halwa'}
+        sample_snacks_data = {'Monday': 'samosa','Tuesday': 'idly','Wednesday':'cutfruits'}
+        current_day=datetime.today().strftime("%A")
+        data = ""
+        if sample_lunch_data.has_key(current_day) and sample_snacks_data.has_key(current_day):
+           data = "Lunch:" + sample_lunch_data[current_day]
+           data += "\n"+ "Snacks:"+ sample_snacks_data[current_day]
+        else:
+           data = "not matching"
+        self.replyMessage(user, data)
 
     def command_003_GetVideoInformation(self, user, message, args):
 	#get youtube video information
@@ -143,7 +159,9 @@ class SampleBot(GtalkRobot):
 	self.replyMessage(user, "\n(arithmetic expression) i.e: 10 * 3250")
 	self.replyMessage(user, "\n(currency) <SYMBOL> <SYMBOL i.e: currency USD EUR")
 	self.replyMessage(user, "\n(weather) <CITY>")
+        self.replyMessage(user, "\nmenu) <menu>")
 	self.replyMessage(user, "\nMore features to come...")
+       
 
    
     #This method is used to response users.

@@ -23,11 +23,11 @@ from email import Encoders
 
 from xml.etree import ElementTree
 
-import mysql.connector
+#import mysql.connector
 from datetime import datetime
-from mysql.connector.cursor import MySQLCursor
-import config
-from utils import jira_rest
+#from mysql.connector.cursor import MySQLCursor
+#import config
+#from utils import jira_rest
 ############################################################################################################################
 def create_jira_object():
     jira_obj = jira_rest.JiraRest(config.JIRA["jira_server"],
@@ -169,16 +169,8 @@ class SampleBot(GtalkRobot):
 	print user, "executed command: Show Help"
 	self.usercommands.append([user.getStripped(), "show help"])
 	self.replyMessage(user, "\nCommands:")
-	self.replyMessage(user, "(email) <email> <message>")
-	self.replyMessage(user, "\n(available|busy|away) <personal_message>")
-	self.replyMessage(user, "\n(youtube|video|vid) <youtube_link>")
-	self.replyMessage(user, "\n(arithmetic expression) i.e: 10 * 3250")
-	self.replyMessage(user, "\n(currency) <SYMBOL> <SYMBOL i.e: currency USD EUR")
-	self.replyMessage(user, "\n(weather) <CITY>")
         self.replyMessage(user, "\n(menu) <menu>")
         self.replyMessage(user, "\n(jira|status|assignee) <ticket number>")
-        self.replyMessage(user, "\nMore features to come...")
-       
 
    
     #This method is used to response users.
@@ -186,10 +178,13 @@ class SampleBot(GtalkRobot):
         '''.*?(?s)(?m)'''
 	print user, "executed command: Unknown Command:", args
 	self.usercommands.append([user.getStripped(), "unknown command ", message])
-        self.replyMessage(user, "Wle unknown Command at:\n" + time.strftime("%Y-%m-%d %a %H:%M:%S", time.gmtime()))
+        self.replyMessage(user, "unknown Command!!")
+        self.replyMessage(user, "\nCommands:")
+        self.replyMessage(user, "\n(menu) <menu>")
+        self.replyMessage(user, "\n(jira|status|assignee) <ticket number>")
 
     def command_012_SearchJIRA(self,user,message,args):
-        '''(jira|status|assignee)\s+(.*)'''
+        '''(jira)\s+(.*)'''
         try:
             message_split = message.split(" ")
             jira_server = jira_rest.JiraRest("https://jira.castlighthealth.com:8443", "wh_ops","")
@@ -200,7 +195,6 @@ class SampleBot(GtalkRobot):
                self.replyMessage(user, "status : "+str(issue.fields.status)+" , assignee : "+str(issue.fields.assignee))
             else:
                self.replyMessage(user, "Wrong ticket")
-            self.replyMessage(user, "End")
         except Exception, e:
             print e
 
